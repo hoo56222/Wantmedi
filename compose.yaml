@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgis/postgis:17-3.7
+    environment:
+      POSTGRES_DB: wantmedi_demo
+      POSTGRES_USER: wantmedi_demo
+      POSTGRES_PASSWORD: "${DEMO_DB_PASSWORD:?DEMO_DB_PASSWORD is required}"
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - demo-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "wantmedi_demo", "-d", "wantmedi_demo"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  demo-db-data:
