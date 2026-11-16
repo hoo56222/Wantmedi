@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: a3548779-9d99-413f-8948-25962cca580e
+
+cloudResources:
+  collections:
+    ../postman/collections/Wantmedi Local Demo: 33ddb8d6-adda-4d1e-9d8f-60bd21c1d9ba
+
+# All resources in the `postman/` folder are automatically registered in Local View.
+# Point to additional files outside the `postman/` folder to register them individually. Example:
+#localResources:
+#  collections:
+#    - ../tests/E2E Test Collection/

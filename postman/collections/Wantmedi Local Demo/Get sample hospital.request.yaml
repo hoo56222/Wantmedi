@@ -1,0 +1,18 @@
+$kind: http-request
+url: http://127.0.0.1:8080/api/hospitals/1
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status is 200', () => {
+        pm.response.to.have.status(200);
+      });
+      pm.test('Response matches the sample hospital', () => {
+        pm.expect(pm.response.json()).to.deep.equal({
+          id: 1,
+          name: '샘플병원',
+          address: '서울특별시 중구'
+        });
+      });
+    language: text/javascript
+order: 1000
