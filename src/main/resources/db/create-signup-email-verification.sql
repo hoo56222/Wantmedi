@@ -1,0 +1,8 @@
+CREATE TABLE public.signup_email_verification (
+	verification_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	email VARCHAR(254) NOT NULL,
+	secret_hash VARCHAR(255) NOT NULL,
+	expires_at TIMESTAMPTZ NOT NULL,
+	used_at TIMESTAMPTZ,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
