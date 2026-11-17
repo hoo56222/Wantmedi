@@ -2,6 +2,8 @@ package com.sp.app.service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -14,23 +16,28 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sp.app.domain.dto.SignupEmailVerificationConfirmRequest;
 import com.sp.app.domain.dto.SignupEmailVerificationRow;
 import com.sp.app.mail.SignupVerificationMailSender;
 import com.sp.app.mapper.SignupEmailVerificationMapper;
+import com.sp.app.mapper.SignupVerificationTokenMapper;
 
 @Service
 public class SignupEmailVerificationService {
 	
 	private final SignupEmailVerificationMapper signupEmailVerificationMapper;
 	private final ObjectProvider<SignupVerificationMailSender> mailSenderProvider;
+	private final SignupVerificationTokenMapper signupVerificationTokenMapper;
 	
 	public SignupEmailVerificationService(
 	        SignupEmailVerificationMapper signupEmailVerificationMapper,
-	        ObjectProvider<SignupVerificationMailSender> mailSenderProvider) {
+	        ObjectProvider<SignupVerificationMailSender> mailSenderProvider,
+	        SignupVerificationTokenMapper signupVerificationTokenMapper) {
 	    this.signupEmailVerificationMapper = signupEmailVerificationMapper;
 	    this.mailSenderProvider = mailSenderProvider;
+	    this.signupVerificationTokenMapper = signupVerificationTokenMapper;
 	}
 
 	// 이메일 정규화
@@ -72,7 +79,8 @@ public class SignupEmailVerificationService {
 	}
 	
 	// 최신의 인증번호 확인 메서드
-	public void confirmVerification(SignupEmailVerificationConfirmRequest request) {
+	@Transactional
+	public String confirmVerification(SignupEmailVerificationConfirmRequest request) {
 		String email = normalizeAndValidateEmail(request.email());
 		SignupEmailVerificationRow verification = signupEmailVerificationMapper.findLatestByEmail(email);
 	
@@ -106,6 +114,44 @@ public class SignupEmailVerificationService {
 		if(updateRows != 1) {
 			throw new InvalidSignupEmailVerificationException();
 		}
+		
+		// 해시, 토큰 만료 유효시간
+		String token = generateSignupVerificationToken();
+		String tokenHash = hashSignupVerificationToken(token);
+		OffsetDateTime tokenExpiresAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(10);
+		
+		int insertRows = signupVerificationTokenMapper.insertToken(tokenHash, email, tokenExpiresAt);
+		
+		if(insertRows != 1) {
+			throw new IllegalStateException();
+		}
+		
+		return token;
+	}
+	
+	// 가입용 토큰 원문을 생성하는 메서드
+	private String generateSignupVerificationToken() {
+		byte[] tokenBytes = new byte[32];
+		SecureRandom random = new SecureRandom();
+		random.nextBytes(tokenBytes);
+		
+		return Base64.getUrlEncoder()
+				.withoutPadding()
+				.encodeToString(tokenBytes);
+	}
+	
+	// 토큰 원문을 DB에 저장할 해시로 변환하는 메서드
+	private String hashSignupVerificationToken(String token) {
+		try {
+			MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
+			byte[] hash = sha256.digest(token.getBytes(StandardCharsets.UTF_8));
+			
+			return HexFormat.of().formatHex(hash);
+			
+			// NoSuchAlgorithmException : 암호화 알고리즘을 찾을 수 없을때 예외
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256을 사용할 수 없습니다.", e);
+		}
 	}
 	
 	// HMAC-SHA256 : 비밀키와 메시지를 결합하여 해시 값을 생성
@@ -134,5 +180,6 @@ public class SignupEmailVerificationService {
 			throw new IllegalArgumentException("이메일 인증 HMAC 키 설정을 확인해주세요.", e);
 		}
 	}
+
 	
 }

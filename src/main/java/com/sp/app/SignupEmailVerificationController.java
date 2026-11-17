@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.sp.app.domain.dto.SignupEmailVerificationConfirmRequest;
+import com.sp.app.domain.dto.SignupEmailVerificationConfirmResponse;
 import com.sp.app.domain.dto.SignupEmailVerificationRequest;
 import com.sp.app.service.InvalidSignupEmailException;
 import com.sp.app.service.InvalidSignupEmailVerificationException;
@@ -38,11 +39,11 @@ public class SignupEmailVerificationController {
 		return ResponseEntity.badRequest().build();
 	}
 	@PostMapping("/api/signup/email-verifications/confirm")
-	public ResponseEntity<Void> confirmVerification(
+	public ResponseEntity<SignupEmailVerificationConfirmResponse> confirmVerification(
 			@RequestBody SignupEmailVerificationConfirmRequest request) {
 		// 서비스 호출
-		signupEmailVerificationService.confirmVerification(request);
-		return ResponseEntity.noContent().build();
+		String token = signupEmailVerificationService.confirmVerification(request);
+		return ResponseEntity.ok(new SignupEmailVerificationConfirmResponse(token));
 	}
 	
 }

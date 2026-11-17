@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sp.app.mapper.SignupVerificationTokenMapper">
+	
+	<!-- 토큰저장 -->
+	<insert id="insertToken"> 
+		INSERT INTO public.signup_verification_token
+		(token_hash, email, expires_at)
+		VALUES(#{tokenHash}, #{email}, #{expiresAt})
+	</insert>
+</mapper>
