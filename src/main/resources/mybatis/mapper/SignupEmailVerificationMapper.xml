@@ -1,8 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sp.app.mapper.SignupEmailVerificationMapper">
+	
+	<!-- 조회 결과를 java 객체로 변환 -->
+	<resultMap type="com.sp.app.domain.dto.SignupEmailVerificationRow" id="verificationRow">
+		<constructor>
+			<idArg column="verification_id" javaType="_long"/>
+			<arg column="secret_hash" javaType="java.lang.String"/>
+			<arg column="expires_at" javaType="java.time.OffsetDateTime"/>
+			<arg column="used_at" javaType="java.time.OffsetDateTime"/>
+		</constructor>
+	</resultMap>
+	
 	<insert id="insertVerification">
 		INSERT INTO public.signup_email_verification (email, secret_hash, expires_at)
 		VALUES(#{email}, #{secretHash}, #{expiresAt})
 	</insert>
+	
+	<!-- 최근에 발급한 이메일 인증번호 -->
+	<select id="findLatestByEmail" resultMap="verificationRow">
+		SELECT verification_id, secret_hash, expires_at, used_at
+		FROM public.signup_email_verification
+		WHERE email = #{email}
+		ORDER BY created_at DESC, verification_id DESC
+		LIMIT 1
+	</select>
+	
+	<!-- 검증에 성공한 인증번호를 한번만 사용하도록 처리 -->
+	<!-- statement_timestamp() : 클라이언트로부터 최신 명령 메시지를 수신한 시점을 기록 -->
+	<update id="markUsed">
+		UPDATE public.signup_email_verification
+		SET used_at = statement_timestamp()
+		WHERE verification_id = #{verificationId}
+			AND used_at IS NULL
+			AND expires_at > statement_timestamp()
+	</update>
 </mapper>

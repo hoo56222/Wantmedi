@@ -15,6 +15,8 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
+import com.sp.app.domain.dto.SignupEmailVerificationConfirmRequest;
+import com.sp.app.domain.dto.SignupEmailVerificationRow;
 import com.sp.app.mail.SignupVerificationMailSender;
 import com.sp.app.mapper.SignupEmailVerificationMapper;
 
@@ -67,6 +69,43 @@ public class SignupEmailVerificationService {
 		mailSender.sendVerificationMail(email, code);
 		// 저장에 성공한 뒤 인증번호를 반환한다.
 		return code;
+	}
+	
+	// 최신의 인증번호 확인 메서드
+	public void confirmVerification(SignupEmailVerificationConfirmRequest request) {
+		String email = normalizeAndValidateEmail(request.email());
+		SignupEmailVerificationRow verification = signupEmailVerificationMapper.findLatestByEmail(email);
+	
+		// 조회 결과가 null 이거나 usedAt() 에 값이 있으면 
+		if(verification == null || verification.usedAt() != null) {
+			// 인증 실패 처리
+			throw new InvalidSignupEmailVerificationException();
+		}
+		
+		// expiresAt() 이 현재 시각과 같거나 이전이면
+		if(!verification.expiresAt().isAfter(OffsetDateTime.now(ZoneOffset.UTC))) {
+			throw new InvalidSignupEmailVerificationException();
+		}
+		
+		// 인증번호 비교 검증
+		// 형식이 올바른 6자리여도, 발급한 번호와 다르면 예외발생
+		HexFormat hex = HexFormat.of();
+		// expectedHash : 서버가 인증번호를 발급할 때 DB에서 읽어온 HMAC
+		// submittedHash : 사용자가 제출한 인증번호로 서버가 계산한 HMAC
+		byte[] expectedHash = hex.parseHex(verification.secretHash());
+		// 요청 인증번호(code) 를 넘겨야함
+		byte[] submittedHash = hex.parseHex(createSecretHash(email, request.code()));
+		
+		if(!java.security.MessageDigest.isEqual(expectedHash, submittedHash)) {
+			throw new InvalidSignupEmailVerificationException();
+		}
+		
+		// markUsed 연결
+		int updateRows = signupEmailVerificationMapper.markUsed(verification.verificationId());
+		// 갱신 건수가 0이면 예외발생
+		if(updateRows != 1) {
+			throw new InvalidSignupEmailVerificationException();
+		}
 	}
 	
 	// HMAC-SHA256 : 비밀키와 메시지를 결합하여 해시 값을 생성
