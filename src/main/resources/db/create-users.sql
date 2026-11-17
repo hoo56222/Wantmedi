@@ -1,8 +1,10 @@
 CREATE TABLE users (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email VARCHAR(254) NOT NULL,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name TEXT NOT NULL,
+    birth_date DATE NOT NULL,
 
     CONSTRAINT users_email_unique UNIQUE (email)
 );

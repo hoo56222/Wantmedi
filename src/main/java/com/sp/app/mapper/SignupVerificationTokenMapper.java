@@ -14,4 +14,8 @@ public interface SignupVerificationTokenMapper {
 			@Param("tokenHash") String tokenHash,
 			@Param("email") String email,
 			@Param("expiresAt") OffsetDateTime expiresAt);
+	
+	public int consumeToken(
+			@Param("tokenHash") String tokenHash,
+			@Param("email") String email);
 }

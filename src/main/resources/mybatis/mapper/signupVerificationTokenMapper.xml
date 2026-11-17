@@ -8,4 +8,14 @@
 		(token_hash, email, expires_at)
 		VALUES(#{tokenHash}, #{email}, #{expiresAt})
 	</insert>
+	
+	<!-- 회원가입 정보추가 -->
+	<update id="consumeToken">
+		UPDATE public.signup_verification_token
+		SET used_at = statement_timestamp()
+		WHERE token_hash = #{tokenHash}
+			AND email = #{email}
+			AND used_at IS NULL
+			AND expires_at > statement_timestamp()
+	</update>
 </mapper>

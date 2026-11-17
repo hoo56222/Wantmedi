@@ -1,13 +1,17 @@
 package com.sp.app.domain;
 
+import java.time.LocalDate;
+
 public class NewUser {
 	private Long id;
 	private final String email;
-	private final String passwordHash;
+	private final String name;
+	private final LocalDate birthDate;
 	
-	public NewUser(String email, String passwordHash) {
+	public NewUser(String email, String name, LocalDate birthDate) {
 		this.email = email;
-		this.passwordHash = passwordHash;
+		this.name = name;
+		this.birthDate = birthDate;
 	}
 	
 	public Long getId() {
@@ -21,8 +25,13 @@ public class NewUser {
 	public String getEmail() {
 		return email;
 	}
-	
-	public String getPasswordHash() {
-		return passwordHash;
+
+	public String getName() {
+		return name;
 	}
+
+	public LocalDate getBirthDate() {
+		return birthDate;
+	}
+
 }

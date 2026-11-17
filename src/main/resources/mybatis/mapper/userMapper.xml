@@ -3,7 +3,7 @@
 <mapper namespace="com.sp.app.mapper.UserMapper">
 	<insert id="insertUser" useGeneratedKeys="true"
 		keyProperty="id" keyColumn="id">
-		INSERT INTO public.users (email, password_hash)
-		VALUES(#{email}, #{passwordHash})
+		INSERT INTO public.users (email, name, birth_date)
+		VALUES(#{email}, #{name}, #{birthDate})
 	</insert>
 </mapper>

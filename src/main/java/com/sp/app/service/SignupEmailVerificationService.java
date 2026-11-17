@@ -5,6 +5,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
@@ -18,11 +19,13 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sp.app.domain.NewUser;
 import com.sp.app.domain.dto.SignupEmailVerificationConfirmRequest;
 import com.sp.app.domain.dto.SignupEmailVerificationRow;
 import com.sp.app.mail.SignupVerificationMailSender;
 import com.sp.app.mapper.SignupEmailVerificationMapper;
 import com.sp.app.mapper.SignupVerificationTokenMapper;
+import com.sp.app.mapper.UserMapper;
 
 @Service
 public class SignupEmailVerificationService {
@@ -30,14 +33,17 @@ public class SignupEmailVerificationService {
 	private final SignupEmailVerificationMapper signupEmailVerificationMapper;
 	private final ObjectProvider<SignupVerificationMailSender> mailSenderProvider;
 	private final SignupVerificationTokenMapper signupVerificationTokenMapper;
+	private final UserMapper userMapper;
 	
 	public SignupEmailVerificationService(
 	        SignupEmailVerificationMapper signupEmailVerificationMapper,
 	        ObjectProvider<SignupVerificationMailSender> mailSenderProvider,
-	        SignupVerificationTokenMapper signupVerificationTokenMapper) {
+	        SignupVerificationTokenMapper signupVerificationTokenMapper,
+	        UserMapper userMapper) {
 	    this.signupEmailVerificationMapper = signupEmailVerificationMapper;
 	    this.mailSenderProvider = mailSenderProvider;
 	    this.signupVerificationTokenMapper = signupVerificationTokenMapper;
+	    this.userMapper = userMapper;
 	}
 
 	// 이메일 정규화
@@ -181,5 +187,37 @@ public class SignupEmailVerificationService {
 		}
 	}
 
-	
+	// 회원가입 시 회원정보
+	@Transactional
+	public long signup(
+			String name, LocalDate birthDate, String rawEmail, 
+			String signupVerificationToken) {
+		
+		if(name == null || name.isBlank() || birthDate == null) {
+			throw new IllegalArgumentException("이름과 생년월일을 입력해주세요.");
+		}
+		
+		if(signupVerificationToken == null || signupVerificationToken.isBlank()) {
+			throw new InvalidSignupEmailVerificationException();
+		}
+			
+		String email = normalizeAndValidateEmail(rawEmail);
+		String tokenHash = hashSignupVerificationToken(signupVerificationToken);
+		
+		int consumedRows = signupVerificationTokenMapper.consumeToken(tokenHash, email);
+		
+		if(consumedRows != 1) {
+			throw new InvalidSignupEmailVerificationException();
+		}
+			
+		NewUser user = new NewUser(email, name, birthDate);
+		int insertRows = userMapper.insertUser(user);
+		
+		if(insertRows != 1 || user.getId() == null) {
+			throw new IllegalStateException("회원 저장에 실패했습니다.");
+		}
+		
+		return user.getId();
+		
+	}
 }
