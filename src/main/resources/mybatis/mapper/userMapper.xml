@@ -2,6 +2,21 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sp.app.mapper.UserMapper">
 
+	<resultMap type="com.sp.app.domain.dto.LoginUserRow" id="loginUserRow">
+		<constructor>
+	        <idArg column="id" javaType="_long"/>
+	        <arg column="password_hash" javaType="java.lang.String"/>		
+		</constructor>
+	</resultMap>
+	
+	<!-- 로그인 -->
+	<select id="findLoginUserByEmail" resultMap="loginUserRow">
+		SELECT id, password_hash
+		FROM public.users
+		WHERE email = #{email}
+			AND password_hash IS NOT NULL
+	</select>
+
 	<!-- ON CONFLICT (email) DO NOTHING -->
 	<!-- 이미 같은 이메일의 회원이 있으면, 이번 INSERT를 건너뛰어라 -->
 	<insert id="insertUser" useGeneratedKeys="true"
