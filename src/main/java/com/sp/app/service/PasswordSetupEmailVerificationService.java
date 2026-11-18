@@ -50,7 +50,13 @@ public class PasswordSetupEmailVerificationService {
 		// 서버의 현재 UTC 시각을 기준으로 만료 시각 계산, 유효기간은 5분을 기준으로 시작
 		OffsetDateTime expiredAt = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(5);
 		
-		if(verificationMapper.insertVerification(userId, secretHash, expiredAt) != 1) {
+		int insertedRows = verificationMapper.insertVerification(userId, secretHash, expiredAt); 
+		
+		if(insertedRows == 0) {
+			return;
+		}
+		
+		if(insertedRows != 1) {
 			throw new IllegalStateException("비밀번호 설정 인증 기록을 저장하지 못했습니다.");
 		}
 		
