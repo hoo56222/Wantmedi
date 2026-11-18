@@ -48,19 +48,8 @@ public class SignupEmailVerificationService {
 
 	// 이메일 정규화
 	public String normalizeAndValidateEmail(String rawEmail) {
-		// rawEmail : 전달받은 이메일
-		// 전달받은 이메일이 null 이거나 공백뿐이면 IllegalArgumentException
-		if(rawEmail == null || rawEmail.isBlank()) {
-			throw new InvalidSignupEmailException("이메일을 입력해주세요.");
-		}
-		// strip()으로 이메일 앞뒤 공백을 제거, 소문자로 변환 
-		String email = rawEmail.strip().toLowerCase(Locale.ROOT);
-		// 정규화한 이메일이 254자를 넘거나 이메일 형식에 맞지 않으면 IllegalArgumentException
-		if(email.length() > 254 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
-			throw new InvalidSignupEmailException("이메일 형식이 올바르지 않습니다.");
-		}
-		// 정규화한 이메일을 반환한다.
-		return email;
+
+		return EmailAddressNormalizer.normalizeAndValidate(rawEmail);
 	}
 	
 	// 인증번호 발급 메서드
@@ -159,32 +148,10 @@ public class SignupEmailVerificationService {
 			throw new IllegalStateException("SHA-256을 사용할 수 없습니다.", e);
 		}
 	}
-	
-	// HMAC-SHA256 : 비밀키와 메시지를 결합하여 해시 값을 생성
-	// -- 데이터 무결성 보장, 복호화 불가능, 안전함
+
 	private String createSecretHash(String email, String code) {
-		// 환경변수에는 무작위로 생성한 32바이트 키를 Base64로 인코딩해 넣는다.
-		String encodedKey = System.getenv("SIGNUP_VERIFICATION_HMAC_KEY");
 		
-		if(encodedKey == null || encodedKey.isBlank()) {
-			throw new IllegalArgumentException("이메일 인증 HMAC 키가 설정되지 않았습니다.");
-		}
-		
-		try {
-			// 이메일 인증 HMAC 키는 32byte 이상이여야 함
-			byte[] key = Base64.getDecoder().decode(encodedKey);
-			if(key.length < 32) {
-				throw new IllegalArgumentException("이메일 인증 HMAC 키는 32byte 이상이어야 합니다.");
-			}
-			
-			Mac mac = Mac.getInstance("HmacSHA256");
-			mac.init(new SecretKeySpec(key, "HmacSHA256"));
-			
-			byte[] hash = mac.doFinal((email + "\n" + code).getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(hash);
-		} catch (IllegalArgumentException | GeneralSecurityException e) {
-			throw new IllegalArgumentException("이메일 인증 HMAC 키 설정을 확인해주세요.", e);
-		}
+		return EmailVerificationCodeHasher.hash(email + "\n" + code);
 	}
 
 	// 회원가입 시 회원정보
@@ -212,6 +179,10 @@ public class SignupEmailVerificationService {
 			
 		NewUser user = new NewUser(email, name, birthDate);
 		int insertRows = userMapper.insertUser(user);
+		
+		if(insertRows == 0) {
+			throw new DuplicateSignupEmailException();
+		}
 		
 		if(insertRows != 1 || user.getId() == null) {
 			throw new IllegalStateException("회원 저장에 실패했습니다.");

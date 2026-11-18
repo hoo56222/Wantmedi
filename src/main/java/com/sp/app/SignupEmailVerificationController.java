@@ -1,6 +1,7 @@
 package com.sp.app;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,6 +12,7 @@ import com.sp.app.domain.dto.SignupEmailVerificationConfirmRequest;
 import com.sp.app.domain.dto.SignupEmailVerificationConfirmResponse;
 import com.sp.app.domain.dto.SignupEmailVerificationRequest;
 import com.sp.app.domain.dto.SignupRequest;
+import com.sp.app.service.DuplicateSignupEmailException;
 import com.sp.app.service.InvalidSignupEmailException;
 import com.sp.app.service.InvalidSignupEmailVerificationException;
 import com.sp.app.service.SignupEmailVerificationService;
@@ -40,6 +42,13 @@ public class SignupEmailVerificationController {
 		
 		return ResponseEntity.badRequest().build();
 	}
+	
+	// 중복 이메일 가입 예외
+	@ExceptionHandler(DuplicateSignupEmailException.class)
+	public ResponseEntity<Void> handleDuplicateSignupEmail() {
+		return ResponseEntity.status(HttpStatus.CONFLICT).build();
+	}
+	
 	@PostMapping("/api/signup/email-verifications/confirm")
 	public ResponseEntity<SignupEmailVerificationConfirmResponse> confirmVerification(
 			@RequestBody SignupEmailVerificationConfirmRequest request) {
