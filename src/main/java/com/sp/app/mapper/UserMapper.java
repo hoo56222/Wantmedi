@@ -25,4 +25,13 @@ public interface UserMapper {
 	
 	// 로그인
 	public LoginUserRow findLoginUserByEmail(@Param("email") String email);
+
+	// 회원 비밀번호 변경 시 필요한 정보 조회
+	public LoginUserRow findLoginUserById(@Param("userId") long userId);
+
+	// 비밀번호 해시 변경 메소드
+	public int changePasswordHash(
+			@Param("userId") long userId,
+			@Param("expectedPasswordHash") String expectedPasswordHash,
+			@Param("newPasswordHash") String newPasswordHash);
 }

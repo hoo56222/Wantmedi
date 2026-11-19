@@ -50,4 +50,20 @@
 			FOR UPDATE
 	</select>
 	
+	<!-- 회원 ID로 비밀번호 검증용 정보 조회 -->
+	<select id="findLoginUserById" resultMap="loginUserRow">
+		SELECT id, password_hash
+		FROM public.users
+		WHERE id = #{userId}
+			AND password_hash IS NOT NULL
+	</select>
+	
+	<!-- 비밀번호 해시 변경 메소드 -->
+	<update id="changePasswordHash">
+		UPDATE public.users
+		SET password_hash = #{newPasswordHash}
+		WHERE id = #{userId}
+			AND password_hash = #{expectedPasswordHash}
+	</update>
+	
 </mapper>

@@ -52,7 +52,7 @@ public class LoginController {
     public ResponseEntity<Map<String, Long>> me(HttpServletRequest servletRequest) {
     		HttpSession session = servletRequest.getSession(false);
     		
-    		// 세션에 로그읺ㄴ 회원 ID가 있는지 확인
+    		// 세션에 로그인 회원 ID가 있는지 확인
     		if(session == null || !(session.getAttribute("userId") instanceof Long userId)) {
     			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     		}
